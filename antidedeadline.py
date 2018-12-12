@@ -241,10 +241,9 @@ class MyWidget(QMainWindow):
     def show_list(self):
         self.w1.listWidget.clear()
         if self.w1.calendarWidget.selectedDate() in self.table:
-            self.w1.listWidget.addItem(str(self.table[self.w1.calendarWidget.selectedDate()][0]))
+            # self.w1.listWidget.addItem(str(self.table[self.w1.calendarWidget.selectedDate()][0]))
             # print(self.table[self.w1.calendarWidget.selectedDate()], self.w1.calendarWidget.selectedDate())
             for i in range(1, len(self.table[self.w1.calendarWidget.selectedDate()])):
-                print('i am fine')
                 print(self.table[self.w1.calendarWidget.selectedDate()])
                 self.w1.listWidget.addItem(' '.join(self.table[self.w1.calendarWidget.selectedDate()][i]))
     def createdeadline(self):
@@ -317,55 +316,46 @@ class MyWidget(QMainWindow):
                         time = (self.free[table_max.addDays(i + 1).toString('ddd')] + ':0').replace('.', ':').split(':')
                         self.table[table_max.addDays(i + 1)] = [str(
                             int(time[0]) * 60 + int(time[1]))]
-            print('hello')
+            # print('hello')
             self.control(name)
         except Exception as e:
             print(e, 'deadlinedo')
 
     def control(self, name):
         try:
-            print('hello control')
+            # print(self.table)
+            # print('hello control')
             end, start, time = self.deadlines[name][0], self.deadlines[name][1], self.deadlines[name][2]
-            print(start, end, start.daysTo(end))
+            # print(end, start, time)
+            # print(start, end, start.daysTo(end))
             swap = []
             for i in range(start.daysTo(end)):
-                print('hello')
                 day = start.addDays(i)
-                '''if time == 0:
-                    self.table[day].append([name, min_time])
-                    break'''
                 min_time = min(int(self.table[day][0]), time)
                 self.table[day][0] = str(int(self.table[day][0]) - min_time)
                 time -= min_time
-                print('hello1')
                 for j in range(1, len(self.table[day])):
                     if self.deadlines[self.table[day][j][0]][0] > end:  # self.table[day][j] - список из названия и времени
                         # self.table[day][j] - список из названия и времени
-                        print('hello2')
                         min_time2 = min(int(self.table[day][j][1]), time)
-                        print('hello3')
                         self.table[day][j][1] = str(int(self.table[day][j][1]) - min_time2)
-                        if self.table[day][j][1] == '0':
-                            print('it is 0')
-                            # Удалить из списка !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                            pass
-                        print(self.table[day][j][-1]) # Вывод 0
-                        print(self.deadlines[self.table[day][j][-1]])
-                        self.deadlines[self.table[day][j][-1]] += min_time2
-
+                        self.deadlines[self.table[day][j][0]][-1] += min_time2
+                        # print(self.deadlines[self.table[day][j][0]][1])
+                        self.deadlines[self.table[day][j][0]][1] = self.deadlines[self.table[day][j][0]][1].addDays(1)
                         time -= min_time2
                         min_time += min_time2
                         swap.append(self.table[day][j][0])
-
-                self.table[day].append([name, str(min_time)])
-                print(self.table[day])
+                    if self.table[day][j][1] == '0':
+                        del self.table[day][j]
+                if min_time != 0:
+                    self.table[day].append([name, str(min_time)])
                 if time == 0:
                     break
             self.deadlines[name][0], self.deadlines[name][1], self.deadlines[name][2] = end, start, time
             for i in swap:
                 self.control(i)
         except Exception as e:
-            print(e)
+            print(e, 'controlError')
 
 
 
