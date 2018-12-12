@@ -177,9 +177,10 @@ class CreateDevelopment(QWidget):
         self.pushButton_2 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_2.setGeometry(QtCore.QRect(50, 340, 281, 31))
         self.pushButton_2.setObjectName("pushButton_2")
-        self.spinBox = QtWidgets.QSpinBox(self.centralwidget)
-        self.spinBox.setGeometry(QtCore.QRect(470, 100, 181, 71))
-        self.spinBox.setObjectName("spinBox")
+        self.lineEdit_2 = QtWidgets.QLineEdit(self.centralwidget)
+        self.lineEdit_2.setGeometry(QtCore.QRect(470, 100, 181, 71))
+        self.lineEdit_2.setObjectName("lineEdit_2")
+
         self.lineEdit = QtWidgets.QLineEdit(self.centralwidget)
         self.lineEdit.setGeometry(QtCore.QRect(470, 20, 181, 61))
         self.lineEdit.setObjectName("lineEdit")
@@ -215,8 +216,8 @@ class MyWidget(QMainWindow):
         # uic.loadUi('create_development.ui', self)
         # self.show()
         self.table = {}
-        self.should_do = {}
-        self.free = {'Пн': '24', 'Вт': '24', 'Ср': '24', 'Чт': '24', 'Пт': '24', 'Сб': '24', 'Вс': '24'}
+        self.developments = {}
+        self.free = {'Пн': '1', 'Вт': '1', 'Ср': '1', 'Чт': '1', 'Пт': '1', 'Сб': '1', 'Вс': '1'}
         self.deadlines = {}
         self.showdeadlines()
 
@@ -228,24 +229,21 @@ class MyWidget(QMainWindow):
             self.w1.pushButton.clicked.connect(self.createdevelopment)
             self.w1.pushButton.clicked.connect(self.w1.close)
             self.w1.calendarWidget.clicked.connect(self.show_list)
-            '''if self.w1.calendarWidget.selectedDate() in self.table:
-                self.w1.listWidget.addItem(str(self.table[self.w1.calendarWidget.selectedDate()][0]))
-                for i in range(1, len(self.table[self.w1.calendarWidget.selectedDate()])):
-                    print('i am fine')
-                    print(self.table[self.w1.calendarWidget.selectedDate()])
-                    self.w1.listWidget.addItem(' '.join(self.table[self.w1.calendarWidget.selectedDate()][i]))'''
-                # self.w1.listWidget.addItems(to_show)
             self.w1.show()
         except Exception as e:
             print(e)
     def show_list(self):
-        self.w1.listWidget.clear()
-        if self.w1.calendarWidget.selectedDate() in self.table:
-            # self.w1.listWidget.addItem(str(self.table[self.w1.calendarWidget.selectedDate()][0]))
-            # print(self.table[self.w1.calendarWidget.selectedDate()], self.w1.calendarWidget.selectedDate())
-            for i in range(1, len(self.table[self.w1.calendarWidget.selectedDate()])):
-                print(self.table[self.w1.calendarWidget.selectedDate()])
-                self.w1.listWidget.addItem(' '.join(self.table[self.w1.calendarWidget.selectedDate()][i]))
+        try:
+            self.w1.listWidget.clear()
+            if self.w1.calendarWidget.selectedDate() in self.table:
+                for i in range(1, len(self.table[self.w1.calendarWidget.selectedDate()])):
+                    # print(self.table[self.w1.calendarWidget.selectedDate()])
+                    self.w1.listWidget.addItem(' '.join(self.table[self.w1.calendarWidget.selectedDate()][i]))
+            if self.w1.calendarWidget.selectedDate() in self.developments:
+                for i in range(len(self.developments[self.w1.calendarWidget.selectedDate()])):
+                    self.w1.listWidget.addItem(' '.join(self.developments[self.w1.calendarWidget.selectedDate()][i]))
+        except Exception as e:
+            print(e)
     def createdeadline(self):
         try:
             self.w2 = CreateDeadline()
@@ -261,7 +259,6 @@ class MyWidget(QMainWindow):
             self.w2.pushButton_2.clicked.connect(self.w2.close)
             self.w2.pushButton.clicked.connect(self.createdevelopment)
             self.w2.pushButton.clicked.connect(self.w2.close)
-
             self.w2.show()
 
         except Exception as e:
@@ -274,9 +271,70 @@ class MyWidget(QMainWindow):
             self.w3.pushButton_2.clicked.connect(self.w3.close)
             self.w3.pushButton.clicked.connect(self.showdeadlines)
             self.w3.pushButton.clicked.connect(self.w3.close)
+            self.w3.pushButton_3.clicked.connect(self.developmentdo)
+            # self.developments[]
             self.w3.show()
         except Exception as e:
             print(e)
+
+
+    def developmentdo(self):
+        try:
+            name = self.w3.lineEdit.text()
+            number = (self.w3.lineEdit_2.text().replace('.', ':') + ':0').split(':')
+            time = str(int(number[0]) * 60 + int(number[1]))
+            date = self.w3.calendarWidget.selectedDate()
+            self.developments[date] = self.developments.get(date, []) + [[name, time]]
+            if date not in self.table:
+                table_time = (self.free[date.toString('ddd')] + ':0').replace('.', ':').split(':')
+                self.table[date] = [str(int(table_time[0]) * 60 + int(table_time[1]))]
+                if int(self.table[date][0]) + int(time) < 0:
+                    print('Нехватка времени!')
+                self.table[date][0] = str(int(self.table[date][0]) + int(time))
+
+            elif self.table[date][0] == '0':
+                self.table[date][0] = str(int(self.table[date][0]) + int(time))
+                if int(time) > 0:
+                    self.plus(date)
+                elif int(time) < 0:
+                    self.minus(date)
+
+
+            # print(date, 'developmentdo', self.table)
+        except Exception as e:
+            print(e)
+
+
+    def plus(self, date):
+        end = max(self.table.keys())
+        swap = []
+        for i in range(1, date.daysTo(end) + 1):
+            day = date.addDays(i)
+            swap.append(day)
+            for j in range(1, len(self.table[day])):
+                min_time = min(int(self.table[date][0]), int(self.table[day][j][1]))
+                self.table[date][0] = str(int(self.table[date][0]) - min_time)
+                self.table[day][j][1] = str(int(self.table[day][j][1]) - min_time)
+                for q in range(1, len(self.table[date])):
+                    if self.table[day][j][0] == self.table[date][q][0]:
+                        self.table[date][q][1] = str(int(self.table[date][q][1]) + min_time)
+                        min_time = 0
+                        break
+                if min_time != 0:
+                    self.table[date].append([self.table[day][j][0], str(min_time)])
+                if self.table[day][j][1] == '0':
+                    del self.table[day][j]
+                if self.table[date][0] == '0':
+                    break
+            if self.table[date][0] == '0':
+                break
+        for i in swap:
+            self.plus(i)
+
+
+
+    def minus(self, date):
+        pass
 
     def deadlinedo(self):
         try:
@@ -299,35 +357,29 @@ class MyWidget(QMainWindow):
             self.deadlines[name] = [end, start, time]
             if bool(self.table) == False:
                 for i in range(start.daysTo(end) + 1):
-                    # print(start.addDays(i).toString('ddd')) # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                     time = (self.free[start.addDays(i).toString('ddd')] + ':0').replace('.', ':').split(':')
-                    self.table[start.addDays(i)] = [str(
-                            int(time[0]) * 60 + int(time[1]))]
-                    # print(self.table[start.addDays(i)])
+                    self.table[start.addDays(i)] = self.table.get(start.addDays(i), [str(
+                            int(time[0]) * 60 + int(time[1]))])
             else:
                 table_min, table_max = min(self.table.keys()), max(self.table.keys()),
                 if start < table_min:
                     for i in range(start.daysTo(table_min)):
                         time = (self.free[start.addDays(i).toString('ddd')] + ':0').replace('.', ':').split(':')
-                        self.table[start.addDays(i)] = [str(
-                            int(time[0]) * 60 + int(time[1]))]
+                        self.table[start.addDays(i)] = self.table.get(start.addDays(i), [str(
+                            int(time[0]) * 60 + int(time[1]))])
                 if table_max < end:
                     for i in range(table_max.daysTo(end)):
                         time = (self.free[table_max.addDays(i + 1).toString('ddd')] + ':0').replace('.', ':').split(':')
-                        self.table[table_max.addDays(i + 1)] = [str(
-                            int(time[0]) * 60 + int(time[1]))]
-            # print('hello')
+                        self.table[table_max.addDays(i + 1)] = self.table.get(table_max.addDays(i), [str(
+                            int(time[0]) * 60 + int(time[1]))])
             self.control(name)
+            # print(self.table)
         except Exception as e:
             print(e, 'deadlinedo')
 
     def control(self, name):
         try:
-            # print(self.table)
-            # print('hello control')
             end, start, time = self.deadlines[name][0], self.deadlines[name][1], self.deadlines[name][2]
-            # print(end, start, time)
-            # print(start, end, start.daysTo(end))
             swap = []
             for i in range(start.daysTo(end)):
                 day = start.addDays(i)
@@ -336,11 +388,9 @@ class MyWidget(QMainWindow):
                 time -= min_time
                 for j in range(1, len(self.table[day])):
                     if self.deadlines[self.table[day][j][0]][0] > end:  # self.table[day][j] - список из названия и времени
-                        # self.table[day][j] - список из названия и времени
                         min_time2 = min(int(self.table[day][j][1]), time)
                         self.table[day][j][1] = str(int(self.table[day][j][1]) - min_time2)
                         self.deadlines[self.table[day][j][0]][-1] += min_time2
-                        # print(self.deadlines[self.table[day][j][0]][1])
                         self.deadlines[self.table[day][j][0]][1] = self.deadlines[self.table[day][j][0]][1].addDays(1)
                         time -= min_time2
                         min_time += min_time2
@@ -349,9 +399,16 @@ class MyWidget(QMainWindow):
                         del self.table[day][j]
                 if min_time != 0:
                     self.table[day].append([name, str(min_time)])
+                # print('sdfghjkl')
+                # print(self.table[day][1:]) # [['qwertyui', '120']]
+                # print(sorted(self.table[day][1:], key=lambda s: self.deadlines[s[0]][0]))
+                self.table[day] = [self.table[day][0]] + sorted(self.table[day][1:], key=lambda s: self.deadlines[s[0]][0])
+                # print('sdfghjkl')
                 if time == 0:
                     break
             self.deadlines[name][0], self.deadlines[name][1], self.deadlines[name][2] = end, start, time
+            if time != 0:
+                print('Нехватка времени', time)
             for i in swap:
                 self.control(i)
         except Exception as e:
