@@ -1,6 +1,7 @@
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QTableWidgetItem
+from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QTableWidgetItem, QMessageBox, QInputDialog
+from datetime import datetime
 
 
 class Show(QWidget):
@@ -241,8 +242,9 @@ class MyWidget(QMainWindow):
                     self.w1.listWidget.addItem(' '.join(self.table[self.w1.calendarWidget.selectedDate()][i]))
             if self.w1.calendarWidget.selectedDate() in self.developments:
                 for i in range(len(self.developments[self.w1.calendarWidget.selectedDate()])):
-                    self.w1.listWidget.addItem(' '.join(self.developments[self.w1.calendarWidget.selectedDate()][i]))
+                    self.w1.listWidget.addItem('событие '+' '.join(self.developments[self.w1.calendarWidget.selectedDate()][i]))
         except Exception as e:
+            # i = QInputDialog.setTextValue(self, e)
             print(e)
     def createdeadline(self):
         try:
@@ -254,6 +256,8 @@ class MyWidget(QMainWindow):
             self.w2.tableWidget_2.setItem(0, 4, QTableWidgetItem(str(self.free['Пт'])))
             self.w2.tableWidget_2.setItem(0, 5, QTableWidgetItem(str(self.free['Сб'])))
             self.w2.tableWidget_2.setItem(0, 6, QTableWidgetItem(str(self.free['Вс'])))
+            self.w2.calendarWidget.setMinimumDate(datetime.today())
+            self.w2.dateEdit.setMinimumDate(datetime.today())
             self.w2.pushButton_3.clicked.connect(self.deadlinedo)
             self.w2.pushButton_2.clicked.connect(self.showdeadlines)
             self.w2.pushButton_2.clicked.connect(self.w2.close)
@@ -291,12 +295,13 @@ class MyWidget(QMainWindow):
                 if int(self.table[date][0]) + int(time) < 0:
                     print('Нехватка времени!')
                 self.table[date][0] = str(int(self.table[date][0]) + int(time))
-
-            elif self.table[date][0] == '0':
+            else:
+                print(self.table)
                 self.table[date][0] = str(int(self.table[date][0]) + int(time))
-                if int(time) > 0:
+                print(self.table)
+                if int(time) > 0 and self.table[date][0] == time:
                     self.plus(date)
-                elif int(time) < 0:
+                elif int(time) < 0 and int(self.table[date][0]) < 0:
                     self.minus(date)
 
 
@@ -334,11 +339,28 @@ class MyWidget(QMainWindow):
 
 
     def minus(self, date):
-        pass
+        swap = []
+        need = -int(self.table[date][0])
+        print(need, 'need')
+        for i in range(1, len(self.table[date])):
+            min_time = min(int(self.table[date][i][1]), need)
+            print(min_time, 'min_time')
+            self.table[date][0] = str(-need + min_time)
+            swap.append(self.table[date][i][0])
+            self.table[date][i][1] = str(int(self.table[date][i][1]) - min_time)
+            self.deadlines[self.table[date][i][0]][-1] = self.deadlines[self.table[date][i][0]][-1] + min_time
+            if self.table[date][0] == '0':
+                break
+        print('minus', self.table)
+        for i in swap:
+            self.control(i)
+
+
+
+
 
     def deadlinedo(self):
         try:
-
             whenfree = [self.w2.tableWidget_2.item(0, i).text() for i in range(7)]
             assert all([i.replace('.', '').replace(':', '').isdigit() for i in whenfree])
             self.free['Пн'] = whenfree[0]
@@ -349,34 +371,49 @@ class MyWidget(QMainWindow):
             self.free['Сб'] = whenfree[5]
             self.free['Вс'] = whenfree[6]
             name = self.w2.lineEdit.text()
+            if name in self.deadlines or name == '':
+                i, okBtnPressed = QInputDialog.getText(
+                    self, "Некорректное имя", "Введенное название уже занято или не было введено"
+                )
+                if okBtnPressed and i != '':
+                    name = i
+                else:
+                    name = name + '(' + \
+                           str(len(list(filter(lambda s: s[:len(name)] == name, self.deadlines.keys()))) + 1) + ')'
             time = int(self.w2.timeEdit.text().split(':')[0]) * 60 + int(self.w2.timeEdit.text().split(':')[1])
             end = self.w2.calendarWidget.selectedDate()
-            # start = QDate.addDays(self.w2.dateEdit.date(), 4)
             start = self.w2.dateEdit.date()
-            #print(end)
-            self.deadlines[name] = [end, start, time]
             if bool(self.table) == False:
                 for i in range(start.daysTo(end) + 1):
-                    time = (self.free[start.addDays(i).toString('ddd')] + ':0').replace('.', ':').split(':')
+                    free_time = (self.free[start.addDays(i).toString('ddd')] + ':0').replace('.', ':').split(':')
                     self.table[start.addDays(i)] = self.table.get(start.addDays(i), [str(
-                            int(time[0]) * 60 + int(time[1]))])
+                            int(free_time[0]) * 60 + int(free_time[1]))])
             else:
-                table_min, table_max = min(self.table.keys()), max(self.table.keys()),
+                table_min, table_max = min(self.table.keys()), max(self.table.keys())
                 if start < table_min:
                     for i in range(start.daysTo(table_min)):
-                        time = (self.free[start.addDays(i).toString('ddd')] + ':0').replace('.', ':').split(':')
+                        free_time = (self.free[start.addDays(i).toString('ddd')] + ':0').replace('.', ':').split(':')
                         self.table[start.addDays(i)] = self.table.get(start.addDays(i), [str(
-                            int(time[0]) * 60 + int(time[1]))])
+                            int(free_time[0]) * 60 + int(free_time[1]))])
                 if table_max < end:
                     for i in range(table_max.daysTo(end)):
-                        time = (self.free[table_max.addDays(i + 1).toString('ddd')] + ':0').replace('.', ':').split(':')
-                        self.table[table_max.addDays(i + 1)] = self.table.get(table_max.addDays(i), [str(
-                            int(time[0]) * 60 + int(time[1]))])
-            self.control(name)
-            # print(self.table)
-        except Exception as e:
-            print(e, 'deadlinedo')
+                        free_time = (self.free[table_max.addDays(i + 1).toString('ddd')] + ':0').replace('.', ':').split(':')
+                        self.table[table_max.addDays(i + 1)] = self.table.get(table_max.addDays(i + 1), [str(
+                            int(free_time[0]) * 60 + int(free_time[1]))])
+            if sum(int(self.table[start.addDays(i)][0]) for i in range(start.daysTo(end))) < time:
+                QMessageBox.question(self, 'Error', 'Не хватает времени. \n' +
+                                     'Освободите время на какой-нибудь день и попробуйте снова',
+                                     QMessageBox.Ok, QMessageBox.Ok)
+            else:
+                self.deadlines[name] = [end, start, time]
+                self.control(name)
+        except AssertionError as e:
+            QMessageBox.question(self, 'Error', 'Невeрный формат. \n' +
+                                 'Верный формат: 1.03 или 1:03, где 1 - кол-во часов, 03 - кол-во минут ',
+                                 QMessageBox.Ok, QMessageBox.Ok)
 
+        except Exception as e:
+            print(e)
     def control(self, name):
         try:
             end, start, time = self.deadlines[name][0], self.deadlines[name][1], self.deadlines[name][2]
@@ -399,20 +436,17 @@ class MyWidget(QMainWindow):
                         del self.table[day][j]
                 if min_time != 0:
                     self.table[day].append([name, str(min_time)])
-                # print('sdfghjkl')
-                # print(self.table[day][1:]) # [['qwertyui', '120']]
-                # print(sorted(self.table[day][1:], key=lambda s: self.deadlines[s[0]][0]))
                 self.table[day] = [self.table[day][0]] + sorted(self.table[day][1:], key=lambda s: self.deadlines[s[0]][0])
-                # print('sdfghjkl')
                 if time == 0:
                     break
+
             self.deadlines[name][0], self.deadlines[name][1], self.deadlines[name][2] = end, start, time
-            if time != 0:
-                print('Нехватка времени', time)
+            # if time != 0:
+            #    print('Нехватка времени', time)
             for i in swap:
                 self.control(i)
         except Exception as e:
-            print(e, 'controlError')
+            i = QInputDialog.setTextValue(self, e)
 
 
 
