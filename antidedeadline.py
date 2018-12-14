@@ -10,7 +10,6 @@ class Show(QWidget):
     def __init__(self):
         super(Show, self).__init__()
         self.setupUi(self)
-
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
@@ -245,6 +244,7 @@ class MyWidget(QMainWindow):
 
     def showdeadlines(self):
         try:
+            # Функция отвечает за отображения окна Просотр событий
             self.w1 = Show()
             self.w1.setWindowIcon(QIcon('icon.png'))
             self.w1.pushButton_2.clicked.connect(self.createdeadline)
@@ -258,13 +258,17 @@ class MyWidget(QMainWindow):
 
     def show_list(self):
         try:
+            # Функция отвечает за вывод информации
             self.w1.listWidget.clear()
+            # Добавляем в список значения, сосотящие из названия дедлайна и времени, которое
+            # отводится на выполнения в каждый из дней
             if self.w1.calendarWidget.selectedDate() in self.table:
                 for i in range(1, len(self.table[self.w1.calendarWidget.selectedDate()])):
                     name, number = self.table[self.w1.calendarWidget.selectedDate()][i]
                     self.w1.listWidget.addItem(
                         '{} {}:{}'.format(name, str(int(number) // 60).rjust(2, '0'),
                                           str(int(number) % 60).ljust(2, '0')))
+            # Добавляем в список события
             if self.w1.calendarWidget.selectedDate() in self.developments:
                 for i in range(len(self.developments[self.w1.calendarWidget.selectedDate()])):
                     name, number = self.developments[self.w1.calendarWidget.selectedDate()][i]
@@ -276,6 +280,7 @@ class MyWidget(QMainWindow):
 
     def createdeadline(self):
         try:
+            # Функция отвечает за отображение окна Создать дедалйн
             self.w2 = CreateDeadline()
             self.w2.setWindowIcon(QIcon('icon.png'))
             self.w2.tableWidget_2.setItem(0, 0, QTableWidgetItem(str(self.free['Пн'])))
@@ -298,6 +303,7 @@ class MyWidget(QMainWindow):
 
     def createdevelopment(self):
         try:
+            # Функция отвечает за отображение окна создать событие
             self.w3 = CreateDevelopment()
             self.w3.setWindowIcon(QIcon('icon.png'))
             self.w3.pushButton_2.clicked.connect(self.createdeadline)
@@ -311,10 +317,11 @@ class MyWidget(QMainWindow):
 
     def developmentdo(self):
         try:
+            # Функция отвечает за обраюотку событий
             name = self.w3.lineEdit.text()
             number = (self.w3.lineEdit_2.text().replace('.', ':') + ':0').split(':')
             assert (number[0].isdigit() or number[0][0] == '-' and number[0][1:].isdigit())\
-                   and number[1].isdigit()
+                   and number[1].isdigit() # Проверка корректности ввода
             if int(number[0]) >= 0:
                 time = str(int(number[0]) * 60 + int(number[1]))
             else:
@@ -322,6 +329,7 @@ class MyWidget(QMainWindow):
             date = self.w3.calendarWidget.selectedDate()
             self.developments[date] = self.developments.get(date, []) + [[name, time]]
             if date not in self.table:
+                # Записываем в self.table, заодно проверяем возможноть выполнения
                 table_time = (self.free[date.toString('ddd')] + ':0').replace('.', ':').split(':')
                 self.table[date] = [str(int(table_time[0]) * 60 + int(table_time[1]))]
                 assert int(self.table[date][0]) + int(time) <= 1440
@@ -334,6 +342,7 @@ class MyWidget(QMainWindow):
                 self.table[date][0] = str(int(self.table[date][0]) + int(time))
             else:
                 self.table[date][0] = str(int(self.table[date][0]) + int(time))
+                # Изменяем расписание
                 if int(time) > 0 and self.table[date][0] == time:
                     self.plus(date)
                 elif int(time) < 0 and int(self.table[date][0]) < 0:
@@ -350,12 +359,14 @@ class MyWidget(QMainWindow):
             print(e)
 
     def plus(self, date):
+        # Переносим занятия с поздних дат на раннюю
         end = max(self.table.keys())
         swap = []
         for i in range(1, date.daysTo(end) + 1):
             day = date.addDays(i)
             swap.append(day)
             for j in range(1, len(self.table[day])):
+                # Проверяем с какой даты пользователь указал выполнение задания
                 if self.deadlines[self.table[day][j][0]][1] <= date:
                     min_time = min(int(self.table[date][0]), int(self.table[day][j][1]))
                     self.table[date][0] = str(int(self.table[date][0]) - min_time)
@@ -373,6 +384,7 @@ class MyWidget(QMainWindow):
                         break
             if self.table[date][0] == '0':
                 break
+        # При переносе событий у других дней так же появилось свободное время
         for i in swap:
             self.plus(i)
 
@@ -380,8 +392,8 @@ class MyWidget(QMainWindow):
         swap = []
         need = -int(self.table[date][0])
         for i in range(1, len(self.table[date])):
+            # свобождаем день от занятий, пока не выйдем из минусового времени
             min_time = min(int(self.table[date][i][1]), need)
-            print(min_time, 'min_time')
             self.table[date][0] = str(-need + min_time)
             swap.append(self.table[date][i][0])
             self.table[date][i][1] = str(int(self.table[date][i][1]) - min_time)
@@ -389,12 +401,15 @@ class MyWidget(QMainWindow):
                 self.deadlines[self.table[date][i][0]][-1] + min_time
             if self.table[date][0] == '0':
                 break
+        # Удаленные занятия надо выполнить, распределяем их по дням
         for i in swap:
             self.control(i)
 
     def deadlinedo(self):
         try:
+            # Функция обрабатывает значения окна создат дедлайн
             whenfree = [self.w2.tableWidget_2.item(0, i).text() for i in range(7)]
+            # Проверка корректности аргументов
             assert all([i.replace('.', '').replace(':', '').isdigit() for i in whenfree])
             assert all([int(i) >= 0 for i in whenfree])
             self.free['Пн'] = whenfree[0]
@@ -405,6 +420,7 @@ class MyWidget(QMainWindow):
             self.free['Сб'] = whenfree[5]
             self.free['Вс'] = whenfree[6]
             name = self.w2.lineEdit.text()
+            # Имена не должны пересекаться
             if name in self.deadlines or name == '':
                 i, okBtnPressed = QInputDialog.getText(
                     self, "Некорректное имя", "Введенное название уже занято или не было введено\n"
@@ -419,6 +435,7 @@ class MyWidget(QMainWindow):
                        ) * 60 + int(self.w2.timeEdit.text().split(':')[1])
             end = self.w2.calendarWidget.selectedDate()
             start = self.w2.dateEdit.date()
+            # Расширяем список обробатываемых дней
             if bool(self.table) == False:
                 for i in range(start.daysTo(end) + 1):
                     free_time = (self.free[start.addDays(i).toString('ddd')] + ':0'
@@ -437,6 +454,7 @@ class MyWidget(QMainWindow):
                         free_time = (self.free[table_max.addDays(i + 1).toString('ddd')] + ':0').replace('.', ':').split(':')
                         self.table[table_max.addDays(i + 1)] = self.table.get(table_max.addDays(i + 1), [str(
                             int(free_time[0]) * 60 + int(free_time[1]))])
+            # Проверяем возможно ли уложиться в срок
             if sum(int(self.table[start.addDays(i)][0]) for i in range(start.daysTo(end))) < time:
                 msg = QMessageBox(self)
                 msg.setIcon(QMessageBox.Critical)
@@ -460,10 +478,13 @@ class MyWidget(QMainWindow):
 
     def control(self, name):
         try:
+            # Собственно, распределитель дедлайнов
             end = self.deadlines[name][0]
             start = self.deadlines[name][1]
             time = self.deadlines[name][2]
             swap = []
+            # Новый дедлайн забирает на свое выполнение свобдное время дня а также дедлайнов,
+            # назначенных на более поздний срок. Дни сменяются от указнанного начала до конца
             for i in range(start.daysTo(end)):
                 day = start.addDays(i)
                 min_time = min(int(self.table[day][0]), time)
@@ -490,6 +511,7 @@ class MyWidget(QMainWindow):
             self.deadlines[name][0] = end
             self.deadlines[name][1] = start
             self.deadlines[name][2] = time
+            # Смещенные дедлайны распределяются на свободные дни
             for i in swap:
                 self.control(i)
         except Exception as e:
