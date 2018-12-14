@@ -15,7 +15,9 @@ class Show(QWidget):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
         MainWindow.setFixedSize(826, 482)
-        MainWindow.setStyleSheet('background-color: #FFD873;')
+        MainWindow.setStyleSheet('background-color: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius: 1, '
+                                 'fx:0.5, fy:0.511364, stop:0 rgba(255, 255, 0, 255), '
+                                 'stop:0.778409 rgba(255, 185, 92, 255));')
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
@@ -72,7 +74,9 @@ class CreateDeadline(QWidget):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setFixedSize(826, 482)
-        MainWindow.setStyleSheet('background-color: #FFD873;')
+        MainWindow.setStyleSheet('background-color: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius: 1, '
+                                 'fx:0.5, fy:0.511364, stop:0 rgba(255, 255, 0, 255), '
+                                 'stop:0.778409 rgba(255, 185, 92, 255));')
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.pushButton = QtWidgets.QPushButton(self.centralwidget)
@@ -123,7 +127,7 @@ class CreateDeadline(QWidget):
         item = QtWidgets.QTableWidgetItem()
         self.tableWidget_2.setHorizontalHeaderItem(6, item)
         self.tableWidget_2.setToolTip('Измените количество свободных часов на каждый день недели\n'
-                                       'Формат ввода: hh, h, h.m, h:m, h:mm, hh:mm, hh.mm')
+                                      'Формат ввода: hh, h, h.m, h:m, h:mm, hh:mm, hh.mm')
         self.lineEdit = QtWidgets.QLineEdit(self.centralwidget)
         self.lineEdit.setGeometry(QtCore.QRect(470, 110, 191, 40))
         self.lineEdit.setObjectName("lineEdit")
@@ -176,7 +180,9 @@ class CreateDevelopment(QWidget):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setFixedSize(826, 482)
-        MainWindow.setStyleSheet('background-color: #FFD873;')
+        MainWindow.setStyleSheet('background-color: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius: 1, '
+                                 'fx:0.5, fy:0.511364, stop:0 rgba(255, 255, 0, 255), '
+                                 'stop:0.778409 rgba(255, 185, 92, 255));')
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.calendarWidget = QtWidgets.QCalendarWidget(self.centralwidget)
@@ -258,7 +264,7 @@ class MyWidget(QMainWindow):
                     name, number = self.table[self.w1.calendarWidget.selectedDate()][i]
                     self.w1.listWidget.addItem(
                         '{} {}:{}'.format(name, str(int(number) // 60).rjust(2, '0'),
-                                                  str(int(number) % 60).ljust(2, '0')))
+                                          str(int(number) % 60).ljust(2, '0')))
             if self.w1.calendarWidget.selectedDate() in self.developments:
                 for i in range(len(self.developments[self.w1.calendarWidget.selectedDate()])):
                     name, number = self.developments[self.w1.calendarWidget.selectedDate()][i]
