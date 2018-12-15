@@ -1,10 +1,12 @@
 import sys
+import os
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QTableWidgetItem
-from PyQt5.QtWidgets import QMessageBox, QInputDialog
+from PyQt5.QtWidgets import QMessageBox, QInputDialog, QAction
 from PyQt5.QtGui import QIcon
 from datetime import datetime
-
+from PyQt5.QtCore import QDate
+import json
 
 class Show(QWidget):
     def __init__(self):
@@ -237,9 +239,27 @@ class MyWidget(QMainWindow):
     def __init__(self):
         super().__init__()
         self.table = {}
+        if os.path.exists(os.getcwd() + '\\table.txt'):
+            table_clone = open(os.getcwd() + '\\table.txt', mode='r')
+            tab = json.loads(table_clone.read())
+            # print(tab)
+            for i in tab:
+                self.table[QDate.fromString(i, "dd/MM/yyyy")] = tab[i]
         self.developments = {}
+        if os.path.exists(os.getcwd() + '\\developments.txt'):
+            developments_clone = open(os.getcwd() + '\\table.txt', mode='r')
+            dev = json.loads(developments_clone.read())
+            for i in dev:
+                self.developments[QDate.fromString(i, "dd/MM/yyyy")] = dev[i]
         self.free = {'Пн': '1', 'Вт': '1', 'Ср': '1', 'Чт': '1', 'Пт': '1', 'Сб': '1', 'Вс': '1'}
         self.deadlines = {}
+        if os.path.exists(os.getcwd() + '\\deadlines.txt'):
+            deadlines_clone = open(os.getcwd() + '\\deadlines.txt')
+            dead = json.loads(deadlines_clone.read())
+            for i in dead:
+                self.deadlines[i] = [QDate.fromString(dead[i][0], "dd/MM/yyyy")] +\
+                                    [QDate.fromString(dead[i][1], "dd/MM/yyyy")] + [dead[i][2]]
+
         self.showdeadlines()
 
     def showdeadlines(self):
@@ -364,6 +384,8 @@ class MyWidget(QMainWindow):
         swap = []
         for i in range(1, date.daysTo(end) + 1):
             day = date.addDays(i)
+            if int(self.table[day][0]) > 0:
+                break
             swap.append(day)
             for j in range(1, len(self.table[day])):
                 # Проверяем с какой даты пользователь указал выполнение задания
@@ -371,6 +393,7 @@ class MyWidget(QMainWindow):
                     min_time = min(int(self.table[date][0]), int(self.table[day][j][1]))
                     self.table[date][0] = str(int(self.table[date][0]) - min_time)
                     self.table[day][j][1] = str(int(self.table[day][j][1]) - min_time)
+                    self.table[day][0] = str(int(self.table[date][0]) + min_time)
                     for q in range(1, len(self.table[date])):
                         if self.table[day][j][0] == self.table[date][q][0]:
                             self.table[date][q][1] = str(int(self.table[date][q][1]) + min_time)
@@ -387,6 +410,7 @@ class MyWidget(QMainWindow):
         # При переносе событий у других дней так же появилось свободное время
         for i in swap:
             self.plus(i)
+        self.write()
 
     def minus(self, date):
         swap = []
@@ -514,8 +538,32 @@ class MyWidget(QMainWindow):
             # Смещенные дедлайны распределяются на свободные дни
             for i in swap:
                 self.control(i)
+            self.write()
         except Exception as e:
             print(e)
+
+    def write(self):
+        # Функция отвечает за сохранение данных после закрытия
+        table = open('table.txt', mode='w')
+        deadlines = open('deadlines.txt', mode='w')
+        table_clone, developments_clone, deadlines_clone = {}, {}, {}
+        for i in self.table:
+            table_clone[i.toString('dd/MM/yyyy')] = self.table[i]
+        for i in self.developments:
+            developments_clone[i.toString('dd/MM/yyyy')] = self.table[i]
+        for i in self.deadlines:
+            deadlines_clone[i] = [self.deadlines[i][0].toString('dd/MM/yyyy'),
+                                  self.deadlines[i][1].toString('dd/MM/yyyy'), self.deadlines[i][2]]
+        table.write(json.dumps(table_clone))
+        deadlines.write(json.dumps(deadlines_clone))
+        table.close()
+        deadlines.close()
+        if bool(self.developments):
+            developments = open('developments.txt', mode='w')
+            for i in self.developments:
+                developments_clone[i.toString('dd/MM/yyyy')] = self.developments[i]
+            developments.write(json.dumps(developments_clone))
+            developments.close()
 
 
 if __name__ == '__main__':
