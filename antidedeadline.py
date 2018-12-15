@@ -8,10 +8,12 @@ from datetime import datetime
 from PyQt5.QtCore import QDate
 import json
 
+
 class Show(QWidget):
     def __init__(self):
         super(Show, self).__init__()
         self.setupUi(self)
+
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
@@ -242,12 +244,11 @@ class MyWidget(QMainWindow):
         if os.path.exists(os.getcwd() + '\\table.txt'):
             table_clone = open(os.getcwd() + '\\table.txt', mode='r')
             tab = json.loads(table_clone.read())
-            # print(tab)
             for i in tab:
                 self.table[QDate.fromString(i, "dd/MM/yyyy")] = tab[i]
         self.developments = {}
         if os.path.exists(os.getcwd() + '\\developments.txt'):
-            developments_clone = open(os.getcwd() + '\\table.txt', mode='r')
+            developments_clone = open(os.getcwd() + '\\developments.txt', mode='r')
             dev = json.loads(developments_clone.read())
             for i in dev:
                 self.developments[QDate.fromString(i, "dd/MM/yyyy")] = dev[i]
@@ -337,7 +338,6 @@ class MyWidget(QMainWindow):
 
     def developmentdo(self):
         try:
-            # Функция отвечает за обраюотку событий
             name = self.w3.lineEdit.text()
             number = (self.w3.lineEdit_2.text().replace('.', ':') + ':0').split(':')
             assert (number[0].isdigit() or number[0][0] == '-' and number[0][1:].isdigit())\
@@ -347,7 +347,7 @@ class MyWidget(QMainWindow):
             else:
                 time = str(int(number[0]) * 60 - int(number[1]))
             date = self.w3.calendarWidget.selectedDate()
-            self.developments[date] = self.developments.get(date, []) + [[name, time]]
+
             if date not in self.table:
                 # Записываем в self.table, заодно проверяем возможноть выполнения
                 table_time = (self.free[date.toString('ddd')] + ':0').replace('.', ':').split(':')
@@ -360,13 +360,17 @@ class MyWidget(QMainWindow):
                     msg.setWindowTitle('Error')
                     msg.show()
                 self.table[date][0] = str(int(self.table[date][0]) + int(time))
+                self.write()
             else:
                 self.table[date][0] = str(int(self.table[date][0]) + int(time))
                 # Изменяем расписание
-                if int(time) > 0 and self.table[date][0] == time:
+                print(int(time), int(self.table[date][0]))
+                if int(time) > 0 and int(self.table[date][0]) == time:
+                    print('plus')
                     self.plus(date)
                 elif int(time) < 0 and int(self.table[date][0]) < 0:
                     self.minus(date)
+            self.developments[date] = self.developments.get(date, []) + [[name, time]]
         except AssertionError:
             msg = QMessageBox(self)
             msg.setIcon(QMessageBox.Critical)
@@ -478,17 +482,8 @@ class MyWidget(QMainWindow):
                         free_time = (self.free[table_max.addDays(i + 1).toString('ddd')] + ':0').replace('.', ':').split(':')
                         self.table[table_max.addDays(i + 1)] = self.table.get(table_max.addDays(i + 1), [str(
                             int(free_time[0]) * 60 + int(free_time[1]))])
-            # Проверяем возможно ли уложиться в срок
-            if sum(int(self.table[start.addDays(i)][0]) for i in range(start.daysTo(end))) < time:
-                msg = QMessageBox(self)
-                msg.setIcon(QMessageBox.Critical)
-                msg.setText('Не хватает времени. \nОсвободите время на какой-нибудь'
-                            ' день и попробуйте снова')
-                msg.setWindowTitle('Error')
-                msg.show()
-            else:
-                self.deadlines[name] = [end, start, time]
-                self.control(name)
+            self.deadlines[name] = [end, start, time]
+            self.control(name)
         except AssertionError as e:
             msg = QMessageBox(self)
             msg.setIcon(QMessageBox.Critical)
@@ -532,9 +527,18 @@ class MyWidget(QMainWindow):
                 self.table[day] = [self.table[day][0]] + sorted_day
                 if time == 0:
                     break
-            self.deadlines[name][0] = end
-            self.deadlines[name][1] = start
-            self.deadlines[name][2] = time
+            if time != 0:
+                msg = QMessageBox(self)
+                msg.setIcon(QMessageBox.Critical)
+                msg.setText('Не хватает времени. \nОсвободите время на какой-нибудь'
+                            ' день и попробуйте снова')
+                msg.setWindowTitle('Error')
+                msg.show()
+                del self.deadlines[name]
+            else:
+                self.deadlines[name][0] = end
+                self.deadlines[name][1] = start
+                self.deadlines[name][2] = time
             # Смещенные дедлайны распределяются на свободные дни
             for i in swap:
                 self.control(i)
